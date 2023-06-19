@@ -1,6 +1,6 @@
-<!DOCTYPE html>
+<!DOCTYPE md>
 
-<html>
+<md>
 <ul>
   <li>Font
   <ul>
@@ -16,4 +16,4 @@
     <li><p style="color:#FEA1A1;">#FEA1A1</p></li>
   </ul></li>
 </ul>
-</html>
+</md>
