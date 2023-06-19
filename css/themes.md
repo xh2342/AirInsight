@@ -3,6 +3,7 @@ Font
 -	Georgia (come with system)
 Color Palette:
 -	Color Hunter: https://colorhunt.co/palette/f9fbe7f0edd4eccdb4fea1a1
+
 o	F9FBE7
 o	F0EDD4
 o	ECCDB4
