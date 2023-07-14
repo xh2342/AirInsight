@@ -1,0 +1,160 @@
+===============================================
+Credentials
+Instance identifier: finalprojecttang
+master username: finalProjectTang
+password: **will be emailed to TA**
+
+Endpoint / host: finalprojecttang.cjsx2phszqjp.us-east-1.rds.amazonaws.com
+Port: 3306
+Database: finalprojecttang
+===============================================
+/*#1.property feature page: After excluding those for long-term rental from general_listings, we classify
+  the remaining listings by property features, and return the sum information for number of airbnb listings
+  among different price ranges*/
+  SELECT
+      SUM(IF(b.price<50,1,0)) as 'UNDER 50',
+      SUM(IF(b.price BETWEEN 50 AND 99,1,0)) as '50-99',
+      SUM(IF(b.price BETWEEN 100 AND 149,1,0)) as '100-149',
+      SUM(IF(b.price BETWEEN 150 AND 199,1,0)) as '150-199',
+      SUM(IF(b.price BETWEEN 200 AND 249,1,0)) as '200-249',
+      SUM(IF(b.price BETWEEN 250 AND 299,1,0)) as '250-299',
+      SUM(IF(b.price BETWEEN 300 AND 349,1,0)) as '300-349',
+      SUM(IF(b.price BETWEEN 350 AND 399,1,0)) as '350-399',
+      SUM(IF(b.price>=400,1,0)) as 'OVER 400',
+      SUM(IF(b.price IS NULL, 1, 0)) as 'Not Filled In (NULL)'
+      FROM
+          (SELECT g.ind, g.room_type, g.accommodates, g.bedrooms, g.beds, g.general_price AS price
+           FROM General_listings g
+           WHERE g.ind NOT IN
+           (SELECT a.ind
+           FROM
+             (SELECT ind, AVG(price)
+              FROM LongTermRental
+              WHERE date< CURDATE()
+              GROUP BY ind) a)) b
+      WHERE b.room_type='${inputRoom_type}' && b.accommodates='${inputAccommodates}' &&
+            b.bedrooms='${inputBedrooms}' && b.beds='${inputBeds}';
+
+
+/*#2.property features page: how many records could we get */
+SELECT COUNT(b.ind)
+FROM
+      (SELECT g.ind, g.room_type, g.accommodates, g.bedrooms, g.beds, g.general_price
+       FROM General_listings g
+       WHERE g.ind NOT IN
+       (SELECT a.ind
+       FROM
+         (SELECT ind, AVG(price)
+          FROM LongTermRental
+          WHERE date< CURDATE()
+          GROUP BY ind) a)) b
+WHERE b.room_type='${inputRoom_type}' && b.accommodates='${inputAccommodates}' &&
+            b.bedrooms='${inputBedrooms}' && b.beds='${inputBeds}';
+
+
+/*#3.property feature page: calculate the percentage of the records gained among the whole general_listings*/
+
+SELECT 1.0*
+       (SELECT COUNT(b.ind)
+        FROM
+      (SELECT g.ind, g.general_price, g.room_type, g.accommodates, g.bedrooms, g.beds
+       FROM General_listings g
+       WHERE g.ind NOT IN
+       (SELECT a.ind
+       FROM
+         (SELECT ind, AVG(price)
+          FROM LongTermRental
+          WHERE date< CURDATE()
+          GROUP BY ind) a)) b
+        WHERE b.room_type='${inputRoom_type}' && b.accommodates='${inputAccommodates}' &&
+            b.bedrooms='${inputBedrooms}' && b.beds='${inputBeds}')/
+       (SELECT COUNT(g.ind)
+        FROM General_listings g ) * 100 AS Percentage;
+
+/*#4. host information page: After excluding those for long-term rental from general_listings, we join
+   host information table, and based on the host information categories, return the sum information for number of airbnb listings
+  among different price ranges*/
+
+ SELECT
+      SUM(IF(b.price<50,1,0)) as 'UNDER 50',
+      SUM(IF(b.price BETWEEN 50 AND 99,1,0)) as '50-99',
+      SUM(IF(b.price BETWEEN 100 AND 149,1,0)) as '100-149',
+      SUM(IF(b.price BETWEEN 150 AND 199,1,0)) as '150-199',
+      SUM(IF(b.price BETWEEN 200 AND 249,1,0)) as '200-249',
+      SUM(IF(b.price BETWEEN 250 AND 299,1,0)) as '250-299',
+      SUM(IF(b.price BETWEEN 300 AND 349,1,0)) as '300-349',
+      SUM(IF(b.price BETWEEN 350 AND 399,1,0)) as '350-399',
+      SUM(IF(b.price>=400,1,0)) as 'OVER 400',
+      SUM(IF(b.price IS NULL, 1, 0)) as 'Not Filled In (NULL)'
+      FROM
+          (SELECT g.ind, g.host_id, g.general_price AS price
+           FROM General_listings g
+           WHERE g.ind NOT IN
+           (SELECT a.ind
+           FROM
+             (SELECT ind, AVG(price)
+              FROM LongTermRental
+              WHERE date< CURDATE()
+              GROUP BY ind) a)) b
+          JOIN Host_information h ON h.host_id=b.host_id
+      WHERE h.host_response_time='${inputHost_response_time}' && h.host_response_rate IS NOT NULL &&
+            h.host_response_rate='${inputHost_response_rate}' && h.host_acceptance_rate IS NOT NULL
+            && h.host_acceptance_rate='${inputHost_acceptance_rate}'
+            && h.host_is_superhost=='${inputHost_is_superhost}' && h.host_total_listings_count='${inputHost_total_listings_count}';
+
+/*#5.host information page: how many records can we get*/
+SELECT COUNT(b.ind)
+FROM
+          (SELECT g.ind, g.host_id
+           FROM General_listings g
+           WHERE g.ind NOT IN
+           (SELECT a.ind
+           FROM
+             (SELECT ind, AVG(price)
+              FROM LongTermRental
+              WHERE date< CURDATE()
+              GROUP BY ind) a)) b
+          JOIN Host_information h ON h.host_id=b.host_id
+      WHERE h.host_response_time='${inputHost_response_time}' && h.host_response_rate IS NOT NULL &&
+            h.host_response_rate='${inputHost_response_rate}' && h.host_acceptance_rate IS NOT NULL
+            && h.host_acceptance_rate='${inputHost_acceptance_rate}'
+            && h.host_is_superhost=='${inputHost_is_superhost}' && h.host_total_listings_count='${inputHost_total_listings_count}';
+
+/*#6.host information webpage: calculate the percentage of the records gained among the whole general_listings*/
+
+SELECT 1.0*
+       (SELECT COUNT(b.ind)
+        FROM
+          (SELECT g.ind, g.host_id
+           FROM General_listings g
+           WHERE g.ind NOT IN
+           (SELECT a.ind
+           FROM
+             (SELECT ind, AVG(price)
+              FROM LongTermRental
+              WHERE date< CURDATE()
+              GROUP BY ind) a)) b
+          JOIN Host_information h ON h.host_id=b.host_id
+        WHERE h.host_response_time='${inputHost_response_time}' && h.host_response_rate IS NOT NULL &&
+            h.host_response_rate='${inputHost_response_rate}' && h.host_acceptance_rate IS NOT NULL
+            && h.host_acceptance_rate='${inputHost_acceptance_rate}'
+            && h.host_is_superhost=='${inputHost_is_superhost}' && h.host_total_listings_count='${inputHost_total_listings_count}')/
+       (SELECT COUNT(g.ind)
+        FROM General_listings g) * 100 AS Percentage;
+
+
+/*#7.give the top ranking listings based on review category*/
+SELECT g.review_scores_rating, g.review_scores_accuracy, g.review_scores_cleanliness,
+       g.review_scores_checkin, g.review_scores_communication, g.review_scores_location,
+       g.review_scores_rating, g.review_scores_value
+FROM General_listings g
+ORDER BY review_scores_rating DESC, review_scores_accuracy DESC,
+         review_scores_cleanliness DESC, review_scores_checkin DESC,
+         review_scores_communication DESC, review_scores_location DESC,
+         review_scores_rating DESC, review_scores_value DESC
+LIMIT ${listingSize};
+
+/*#8. demonstrate the details of the listing when clicking the listing id*/
+SELECT g.neighborhood, g.area, g.latitude, g.longitude, g.general_price
+FROM General_listings g
+WHERE g.ind=${inputInd};
