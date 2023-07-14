@@ -128,7 +128,7 @@ const search_features_percentage = async function(req, res){
   })
 }
 
-// Route 4: After excluding those for long-term rental from general_listings, we join
+// Route 4: After excluding those for long-term rental from general_listings, join
 // host information table, and based on the host information categories, return the sum information for number of airbnb listings
 // among different price ranges
 const search_host_info = async function(req, res){
@@ -177,27 +177,144 @@ const search_host_info = async function(req, res){
   })
 }
 
-// Route 3: get hotel comparisons page
+
+
+// Route 5: return the number of records for the retrived hotel data
 // app.get('/hotels', routes.hotels);
-const search_hotels = async function(req, res){
-  
+const search_host_info_count = async function(req, res){
+  const inputHost_response_time = req.query.inputHost_response_time ?? 0;
+  const inputHost_response_rate = req.query.inputHost_response_rate ?? 0;
+  const inputHost_acceptance_rate = req.query.inputHost_acceptance_rate ?? 0;
+  const inputHost_is_superhost = req.query.inputHost_is_superhost === 'true'? 1 : 0;
+  const inputHost_total_listings_count = req.query.inputHost_total_listings_count ?? 0;
+
+  connection.query(`
+  SELECT COUNT(b.ind)
+  FROM
+          (SELECT g.ind, g.host_id
+           FROM General_listings g
+           WHERE g.ind NOT IN
+           (SELECT a.ind
+           FROM
+             (SELECT ind, AVG(price)
+              FROM LongTermRental
+              WHERE date< CURDATE()
+              GROUP BY ind) a)) b
+          JOIN Host_information h ON h.host_id=b.host_id
+      WHERE h.host_response_time='${inputHost_response_time}' && h.host_response_rate IS NOT NULL &&
+            h.host_response_rate='${inputHost_response_rate}' && h.host_acceptance_rate IS NOT NULL
+            && h.host_acceptance_rate='${inputHost_acceptance_rate}'
+            && h.host_is_superhost=='${inputHost_is_superhost}' && h.host_total_listings_count='${inputHost_total_listings_count}';
+
+  `, (err, data) => {
+    if (err){
+      console.log(err);
+      res.json([]);
+    }else if (data.length === 0){
+      res.json([]);
+    }else{
+      res.json(data);
+    }
+  })
 }
 
-// Route 4: get top listing page
+// Route 6: calculate the percentage of the hotel records gained among the whole general_listings
 // app.get('/top_listing', routes.top_listing);
-const search_top_listing = async function(req, res){
-  
+const search_host_info_percentage = async function(req, res){
+  const inputHost_response_time = req.query.inputHost_response_time ?? 0;
+  const inputHost_response_rate = req.query.inputHost_response_rate ?? 0;
+  const inputHost_acceptance_rate = req.query.inputHost_acceptance_rate ?? 0;
+  const inputHost_is_superhost = req.query.inputHost_is_superhost === 'true'? 1 : 0;
+  const inputHost_total_listings_count = req.query.inputHost_total_listings_count ?? 0;
+
+  connection.query(`
+  SELECT 1.0*
+       (SELECT COUNT(b.ind)
+        FROM
+          (SELECT g.ind, g.host_id
+           FROM General_listings g
+           WHERE g.ind NOT IN
+           (SELECT a.ind
+           FROM
+             (SELECT ind, AVG(price)
+              FROM LongTermRental
+              WHERE date< CURDATE()
+              GROUP BY ind) a)) b
+          JOIN Host_information h ON h.host_id=b.host_id
+        WHERE h.host_response_time='${inputHost_response_time}' && h.host_response_rate IS NOT NULL &&
+            h.host_response_rate='${inputHost_response_rate}' && h.host_acceptance_rate IS NOT NULL
+            && h.host_acceptance_rate='${inputHost_acceptance_rate}'
+            && h.host_is_superhost=='${inputHost_is_superhost}' && h.host_total_listings_count='${inputHost_total_listings_count}')/
+       (SELECT COUNT(g.ind)
+        FROM General_listings g) * 100 AS Percentage;
+  `, (err, data) => {
+    if (err){
+      console.log(err);
+      res.json([]);
+    }else if (data.length === 0){
+      res.json([]);
+    }else{
+      res.json(data);
+    }
+  })
 }
 
-// Rooute 5: get information for individual top listing airbnb (pop-up window)
-// app.get('/top_listing/:air_id', routes.listing_info);
-const listing_info = async function(req, res){
-  
+// Rooute 7: return the top ranking listings based on review category
+const top_ranking = async function(req, res){
+  const reviewType = req.query.reviewType ?? 'Overall';
+  const listingSize = req.query.listingSize ?? 10;
+
+  connection.query(`
+  SELECT g.review_scores_rating, g.review_scores_accuracy, g.review_scores_cleanliness,
+       g.review_scores_checkin, g.review_scores_communication, g.review_scores_location,
+       g.review_scores_rating, g.review_scores_value
+  FROM General_listings g
+  ORDER BY review_scores_rating DESC, review_scores_accuracy DESC,
+         review_scores_cleanliness DESC, review_scores_checkin DESC,
+         review_scores_communication DESC, review_scores_location DESC,
+         review_scores_rating DESC, review_scores_value DESC
+  LIMIT ${listingSize};
+  `, (err, data) => {
+    if (err){
+      console.log(err);
+      res.json([]);
+    }else if (data.length === 0){
+      res.json([]);
+    }else{
+      res.json(data);
+    }
+  })
 }
+
+
+// route 8: demonstrate the details of the listing when clicking the listing
+const listing_info = async function(req, res){
+  const listing_id = req.params.listing_id ?? 0;
+
+  connection.query(`
+  SELECT g.neighborhood, g.area, g.latitude, g.longitude, g.general_price
+  FROM General_listings g
+  WHERE g.ind=${listing_id}
+  `, (err, data) => {
+    if (err){
+      console.log(err);
+      res.json([]);
+    }else if (data.length === 0){
+      res.json([]);
+    }else{
+      res.json(data);
+    }
+  })
+}
+
 
 module.exports = {
   search_features,
   search_features_count,
   search_features_percentage,
   search_host_info,
+  search_host_info_count,
+  search_host_info_percentage,
+  top_ranking,
+  listing_info
 }
