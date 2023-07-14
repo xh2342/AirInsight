@@ -10,16 +10,19 @@ app.use(cors({
 
 // We use express to define our various API endpoints and
 // provide their handlers that we implemented in routes.js
-// get home page
-app.get('/home', routes.home);
-// get property features page
-app.get('/property_features', routes.property_features);
-// get host information page
-app.get('/host_info', routes.host_info);
-// get hotel comparisons page
-app.get('/hotels', routes.hotels);
-// get top listing page
-app.get('/top_listing', routes.top_listing);
+// get property features
+app.get('/search_features', routes.search_features);
+// get number of result for searching by property features
+app.get('/search_features_count', routes.search_features_count);
+// calculate the percentage of the records gained among the whole general_listings
+app.get('search_features_percentage', routes.search_features_percentage);
+// get host information
+app.get('/search_host_info', routes.search_host_info);
+
+// get hotel comparisons
+app.get('/search_hotels', routes.search_hotels);
+// get top listing
+app.get('/search_top_listing', routes.search_top_listing);
 // get information for individual top listing airbnb (pop-up window)
 app.get('/top_listing/:air_id', routes.listing_info);
 
