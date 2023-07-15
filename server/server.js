@@ -15,7 +15,7 @@ app.get('/search_features', routes.search_features);
 // get number of result for searching by property features
 app.get('/search_features_count', routes.search_features_count);
 // get the percentage of the records retrived among the whole general_listings
-app.get('search_features_percentage', routes.search_features_percentage);
+app.get('/search_features_percentage', routes.search_features_percentage);
 // get host information
 app.get('/search_host_info', routes.search_host_info);
 // get the number of hotel records for the retrived hotel data
