@@ -11,16 +11,51 @@ const connection = mysql.createConnection({
 });
 connection.connect((err) => err && console.log(err));
 
+// maps mapping inputs to query conditions
+const roomTypeDict = {
+  "All": [0, 3],
+  "Entire Home/Apt": [0, 0],
+  "Private Room": [1, 1],
+  "Hotel Roon": [2, 2],
+  "Shared Room": [3, 3]
+}
+
+const accommodateRange = {
+  "All": [0, 16],
+  "1-2": [1, 2],
+  "3-4": [3, 4],
+  "5-8": [5, 8],
+  "9+": [9, 16]
+}
+
+const bedroomsRange = {
+  "All": [1, 25],
+  "1-2": [1, 2],
+  "3-4": [3, 4],
+  "5-8": [5, 8],
+  "9+": [9, 25]
+}
+
+const bedsRange = {
+  "All": [1, 50],
+  "1-2": [1, 2],
+  "3-4": [3, 4],
+  "5-8": [5, 8],
+  "9+": [9, 50]
+}
 
 // Route 1: GET /search_features
 // After excluding those for long-term rental from general_listings, classify the 
 // remaining listings by property features, and return the sum information for number 
 // of airbnb listingsamong different price ranges
 const search_features = async function(req, res){
-  const inputRoom_type = req.query.inputRoom_type? req.query.inputRoom_type : '%';
-  const inputAccommodates = req.query.inputAccommodates ?? 0;
-  const inputBedrooms = req.query.inputBedrooms ?? 0;
-  const inputBeds = req.query.inputBeds ?? 0;
+  const roomType = roomTypeDict[req.query.roomType ?? 'All'];
+  const accommodatesLow = accommodateRange[req.query.accommodates ?? 'All'][0];
+  const accommodatesHigh = accommodateRange[req.query.accommodates ?? 'All'][1];
+  const bedroomsLow = bedroomsRange[req.query.beedrooms ?? 'All'][0];
+  const bedroomsHigh = bedroomsRange[req.query.bedrooms ?? 'All'][1];
+  const bedsLow = bedsRange[req.query.beds ?? 'All'][0];
+  const bedsHigh = bedsRange[req.query.beds ?? 'All'][1];
 
   connection.query(`
   SELECT
@@ -44,8 +79,10 @@ const search_features = async function(req, res){
               FROM LongTermRental
               WHERE date< CURDATE()
               GROUP BY ind) a)) b
-      WHERE b.room_type='${inputRoom_type}' && b.accommodates='${inputAccommodates}' &&
-            b.bedrooms='${inputBedrooms}' && b.beds='${inputBeds}';
+      WHERE b.room_type>='${roomType[0]}' && b.room_type<='${roomType[1]}' && 
+            b.accommodates >= '${accommodatesLow}' && b.accommodates <= '${accommodatesHigh}' &&
+            b.bedrooms >='${bedroomsLow}' && b.bedrooms <= '${bedroomsHigh}' &&
+            b.beds >= '${bedsLow}' && b.beds <= '${bedsHigh}';
   `, (err, data) => {
     if (err){
       console.log(err);
@@ -60,13 +97,16 @@ const search_features = async function(req, res){
 
 // Route 2: how many records could we get by searching features
 const search_features_count = async function(req, res){
-  const inputRoom_type = req.query.inputRoom_type? req.query.inputRoom_type : '%';
-  const inputAccommodates = req.query.inputAccommodates ?? 0;
-  const inputBedrooms = req.query.inputBedrooms ?? 0;
-  const inputBeds = req.query.inputBeds ?? 0;
+  const roomType = roomTypeDict[req.query.roomType ?? 'All'];
+  const accommodatesLow = accommodateRange[req.query.accommodates ?? 'All'][0];
+  const accommodatesHigh = accommodateRange[req.query.accommodates ?? 'All'][1];
+  const bedroomsLow = bedroomsRange[req.query.beedrooms ?? 'All'][0];
+  const bedroomsHigh = bedroomsRange[req.query.bedrooms ?? 'All'][1];
+  const bedsLow = bedsRange[req.query.beds ?? 'All'][0];
+  const bedsHigh = bedsRange[req.query.beds ?? 'All'][1];
 
   connection.query(`
-  SELECT COUNT(b.ind)
+  SELECT COUNT(b.ind) AS COUNT
   FROM
         (SELECT g.ind, g.room_type, g.accommodates, g.bedrooms, g.beds, g.general_price
         FROM General_listings g
@@ -77,8 +117,10 @@ const search_features_count = async function(req, res){
             FROM LongTermRental
             WHERE date< CURDATE()
             GROUP BY ind) a)) b
-  WHERE b.room_type='${inputRoom_type}' && b.accommodates='${inputAccommodates}' &&
-              b.bedrooms='${inputBedrooms}' && b.beds='${inputBeds}';
+  WHERE b.room_type>='${roomType[0]}' && b.room_type<='${roomType[1]}' && 
+        b.accommodates >= '${accommodatesLow}' && b.accommodates <= '${accommodatesHigh}' &&
+        b.bedrooms >='${bedroomsLow}' && b.bedrooms <= '${bedroomsHigh}' &&
+        b.beds >= '${bedsLow}' && b.beds <= '${bedsHigh}';
   `, (err, data) => {
     if (err){
       console.log(err);
@@ -94,14 +136,17 @@ const search_features_count = async function(req, res){
 
 // Route 3: calculate the percentage of the records gained among the whole general_listings
 const search_features_percentage = async function(req, res){
-  const inputRoom_type = req.query.inputRoom_type? req.query.inputRoom_type : '%';
-  const inputAccommodates = req.query.inputAccommodates ?? 0;
-  const inputBedrooms = req.query.inputBedrooms ?? 0;
-  const inputBeds = req.query.inputBeds ?? 0;
+  const roomType = roomTypeDict[req.query.roomType ?? 'All'];
+  const accommodatesLow = accommodateRange[req.query.accommodates ?? 'All'][0];
+  const accommodatesHigh = accommodateRange[req.query.accommodates ?? 'All'][1];
+  const bedroomsLow = bedroomsRange[req.query.beedrooms ?? 'All'][0];
+  const bedroomsHigh = bedroomsRange[req.query.bedrooms ?? 'All'][1];
+  const bedsLow = bedsRange[req.query.beds ?? 'All'][0];
+  const bedsHigh = bedsRange[req.query.beds ?? 'All'][1];
 
   connection.query(`
   SELECT 1.0*
-       (SELECT COUNT(b.ind)
+       (SELECT COUNT(b.ind) 
         FROM
       (SELECT g.ind, g.general_price, g.room_type, g.accommodates, g.bedrooms, g.beds
        FROM General_listings g
@@ -112,10 +157,12 @@ const search_features_percentage = async function(req, res){
           FROM LongTermRental
           WHERE date< CURDATE()
           GROUP BY ind) a)) b
-        WHERE b.room_type='${inputRoom_type}' && b.accommodates='${inputAccommodates}' &&
-            b.bedrooms='${inputBedrooms}' && b.beds='${inputBeds}')/
+        WHERE b.room_type>='${roomType[0]}' && b.room_type<='${roomType[1]}' && 
+              b.accommodates >= '${accommodatesLow}' && b.accommodates <= '${accommodatesHigh}' &&
+              b.bedrooms >='${bedroomsLow}' && b.bedrooms <= '${bedroomsHigh}' &&
+              b.beds >= '${bedsLow}' && b.beds <= '${bedsHigh}')/
        (SELECT COUNT(g.ind)
-        FROM General_listings g ) * 100 AS Percentage;
+        FROM General_listings g ) * 100 AS PERCENTAGE;
   `, (err, data) => {
     if (err){
       console.log(err);
@@ -128,7 +175,7 @@ const search_features_percentage = async function(req, res){
   })
 }
 
-// Route 4: After excluding those for long-term rental from general_listings, we join
+// Route 4: After excluding those for long-term rental from general_listings, join
 // host information table, and based on the host information categories, return the sum information for number of airbnb listings
 // among different price ranges
 const search_host_info = async function(req, res){
@@ -177,27 +224,141 @@ const search_host_info = async function(req, res){
   })
 }
 
-// Route 3: get hotel comparisons page
+
+
+// Route 5: return the number of records for the retrived hotel data
 // app.get('/hotels', routes.hotels);
-const search_hotels = async function(req, res){
-  
+const search_host_info_count = async function(req, res){
+  const inputHost_response_time = req.query.inputHost_response_time ?? 0;
+  const inputHost_response_rate = req.query.inputHost_response_rate ?? 0;
+  const inputHost_acceptance_rate = req.query.inputHost_acceptance_rate ?? 0;
+  const inputHost_is_superhost = req.query.inputHost_is_superhost === 'true'? 1 : 0;
+  const inputHost_total_listings_count = req.query.inputHost_total_listings_count ?? 0;
+
+  connection.query(`
+  SELECT COUNT(b.ind)
+  FROM
+          (SELECT g.ind, g.host_id
+           FROM General_listings g
+           WHERE g.ind NOT IN
+           (SELECT a.ind
+           FROM
+             (SELECT ind, AVG(price)
+              FROM LongTermRental
+              WHERE date< CURDATE()
+              GROUP BY ind) a)) b
+          JOIN Host_information h ON h.host_id=b.host_id
+      WHERE h.host_response_time='${inputHost_response_time}' && h.host_response_rate IS NOT NULL &&
+            h.host_response_rate='${inputHost_response_rate}' && h.host_acceptance_rate IS NOT NULL
+            && h.host_acceptance_rate='${inputHost_acceptance_rate}'
+            && h.host_is_superhost=='${inputHost_is_superhost}' && h.host_total_listings_count='${inputHost_total_listings_count}';
+
+  `, (err, data) => {
+    if (err){
+      console.log(err);
+      res.json([]);
+    }else if (data.length === 0){
+      res.json([]);
+    }else{
+      res.json(data);
+    }
+  })
 }
 
-// Route 4: get top listing page
+// Route 6: calculate the percentage of the hotel records gained among the whole general_listings
 // app.get('/top_listing', routes.top_listing);
-const search_top_listing = async function(req, res){
-  
+const search_host_info_percentage = async function(req, res){
+  const inputHost_response_time = req.query.inputHost_response_time ?? 0;
+  const inputHost_response_rate = req.query.inputHost_response_rate ?? 0;
+  const inputHost_acceptance_rate = req.query.inputHost_acceptance_rate ?? 0;
+  const inputHost_is_superhost = req.query.inputHost_is_superhost === 'true'? 1 : 0;
+  const inputHost_total_listings_count = req.query.inputHost_total_listings_count ?? 0;
+
+  connection.query(`
+  SELECT 1.0*
+       (SELECT COUNT(b.ind)
+        FROM
+          (SELECT g.ind, g.host_id
+           FROM General_listings g
+           WHERE g.ind NOT IN
+           (SELECT a.ind
+           FROM
+             (SELECT ind, AVG(price)
+              FROM LongTermRental
+              WHERE date< CURDATE()
+              GROUP BY ind) a)) b
+          JOIN Host_information h ON h.host_id=b.host_id
+        WHERE h.host_response_time='${inputHost_response_time}' && h.host_response_rate IS NOT NULL &&
+            h.host_response_rate='${inputHost_response_rate}' && h.host_acceptance_rate IS NOT NULL
+            && h.host_acceptance_rate='${inputHost_acceptance_rate}'
+            && h.host_is_superhost=='${inputHost_is_superhost}' && h.host_total_listings_count='${inputHost_total_listings_count}')/
+       (SELECT COUNT(g.ind)
+        FROM General_listings g) * 100 AS Percentage;
+  `, (err, data) => {
+    if (err){
+      console.log(err);
+      res.json([]);
+    }else if (data.length === 0){
+      res.json([]);
+    }else{
+      res.json(data);
+    }
+  })
 }
 
-// Rooute 5: get information for individual top listing airbnb (pop-up window)
-// app.get('/top_listing/:air_id', routes.listing_info);
-const listing_info = async function(req, res){
-  
+// Rooute 7: return the top ranking listings based on review category
+const top_ranking = async function(req, res){
+  const reviewType = req.query.reviewType ?? 'Overall';
+  const listingSize = req.query.listingSize ?? 10;
+
+  connection.query(`
+  SELECT g.ind, g.review_scores_rating, g.review_scores_accuracy, g.review_scores_cleanliness,
+       g.review_scores_checkin, g.review_scores_communication, g.review_scores_location,
+       g.review_scores_rating, g.review_scores_value
+FROM General_listings g
+ORDER BY ${reviewType} DESC
+LIMIT ${listingSize};
+  `, (err, data) => {
+    if (err){
+      console.log(err);
+      res.json([]);
+    }else if (data.length === 0){
+      res.json([]);
+    }else{
+      res.json(data);
+    }
+  })
 }
+
+
+// route 8: demonstrate the details of the listing when clicking the listing
+const listing_info = async function(req, res){
+  const listing_id = req.params.listing_id ?? 0;
+
+  connection.query(`
+  SELECT g.neighborhood, g.area, g.latitude, g.longitude, g.general_price
+  FROM General_listings g
+  WHERE g.ind=${listing_id}
+  `, (err, data) => {
+    if (err){
+      console.log(err);
+      res.json([]);
+    }else if (data.length === 0){
+      res.json([]);
+    }else{
+      res.json(data);
+    }
+  })
+}
+
 
 module.exports = {
   search_features,
   search_features_count,
   search_features_percentage,
   search_host_info,
+  search_host_info_count,
+  search_host_info_percentage,
+  top_ranking,
+  listing_info
 }
