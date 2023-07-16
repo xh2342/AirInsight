@@ -2,7 +2,7 @@
   "rds_host": "cis-550.ck3jbogljh6i.us-east-1.rds.amazonaws.com",
   "rds_port": "3306",
   "rds_user": "admin",
-  "rds_password": "",
+  "rds_password": "TEMPCODE2342",
   "rds_db": "AirbnbVSHotels1",
   "server_host": "localhost",
   "server_port": "8080"
