@@ -26,6 +26,9 @@ app.get('/search_host_info_percentage', routes.search_host_info_percentage);
 app.get('/top_ranking', routes.top_ranking);
 // get the information for the selected listing
 app.get('/top_listing/:listing_id', routes.listing_info);
+// get recommendation for accommodation based on price per-capita
+app.get('/rec', routes.recommendation);
+
 
 app.listen(config.server_port, () => {
   console.log(`Server running at http://${config.server_host}:${config.server_port}/`)

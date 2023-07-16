@@ -80,6 +80,15 @@ const totalListingRange = {
   "11": [11, Number.MAX_SAFE_INTEGER]
 }
 
+const reviewTypeMap = {
+  'RATING': 'g.review_scores_rating',
+  'ACCURACY': 'g.review_scores_accuracy',
+  'CLEANLINESS': 'g.review_scores_cleanliness',
+  'CHECKIN': 'g.review_scores_checkin',
+  'COMMUNICATION': 'g.review_scores_communication',
+  'LOCATION': 'g.review_scores_location',
+  'VALUE': 'g.review_scores_value'
+}
 
 // Route 1: GET /search_features
 // After excluding those for long-term rental from general_listings, classify the 
@@ -348,16 +357,21 @@ const search_host_info_percentage = async function(req, res){
 
 // Rooute 7: return the top ranking listings based on review category
 const top_ranking = async function(req, res){
-  const reviewType = req.query.reviewType ?? 'Overall';
+  const reviewType = reviewTypeMap[req.query.reviewType ?? 'RATING'];
   const listingSize = req.query.listingSize ?? 10;
 
   connection.query(`
-  SELECT g.ind, g.review_scores_rating, g.review_scores_accuracy, g.review_scores_cleanliness,
-       g.review_scores_checkin, g.review_scores_communication, g.review_scores_location,
-       g.review_scores_rating, g.review_scores_value
-FROM General_listings g
-ORDER BY ${reviewType} DESC
-LIMIT ${listingSize};
+  SELECT g.ind AS ID,
+      g.review_scores_rating AS RATING, 
+      g.review_scores_accuracy AS ACCURACY, 
+      g.review_scores_cleanliness AS CLEANLINESS,
+      g.review_scores_checkin AS CHECKIN, 
+      g.review_scores_communication AS COMMUNICATION, 
+      g.review_scores_location AS LOCATION,
+      g.review_scores_value AS VALUE
+  FROM General_listings g
+  ORDER BY ${reviewType} DESC
+  LIMIT ${listingSize};
   `, (err, data) => {
     if (err){
       console.log(err);
@@ -376,7 +390,14 @@ const listing_info = async function(req, res){
   const listing_id = req.params.listing_id ?? 0;
 
   connection.query(`
-  SELECT g.neighborhood, g.area, g.latitude, g.longitude, g.general_price
+  SELECT g.neighborhood, g.area, g.latitude, g.longitude, g.general_price,
+      g.review_scores_rating AS RATING, 
+      g.review_scores_accuracy AS ACCURACY, 
+      g.review_scores_cleanliness AS CLEANLINESS,
+      g.review_scores_checkin AS CHECKIN, 
+      g.review_scores_communication AS COMMUNICATION, 
+      g.review_scores_location AS LOCATION,
+      g.review_scores_value AS VALUE
   FROM General_listings g
   WHERE g.ind=${listing_id}
   `, (err, data) => {
@@ -396,7 +417,7 @@ const listing_info = async function(req, res){
 // For each neighborhood, compute the aggregate ratings, and calculate the average for Airbnb and 
 // Hotels,and conclude whether one should accommodate in Airbnb or Hotels.
 const recommendation = async function(req, res){
-  const neighborhood = neighborhoodMap[req.query.neighborhood?? 'All'];
+  const neighborhood = req.query.neighborhood ?? 'Inglewood';
 
   connection.query(`
     WITH airbnbs AS (SELECT g.*
@@ -465,7 +486,7 @@ const recommendation = async function(req, res){
             GROUP BY neighborhood),
 
     #join airbnbs and hotels, and display the better options
-    summ_stats AS(SELECT a.*,h.*,
+    summ_stats AS(SELECT a.neighborhood AS neighborhood,
         (CASE WHEN h.avg_hotelsratings>a.avg_bnbratings THEN 'Hotels' ELSE 'Airbnb' END) AS better_rating,
         (CASE WHEN h.avg_hotelsprice<a.avg_bnbprice THEN 'Hotels' ELSE 'Airbnb' END) AS better_price
         FROM airbnbs4 a
@@ -473,10 +494,11 @@ const recommendation = async function(req, res){
         ON a.neighborhood = h.neighborhood)
         
     #select results from designated neighborhood
-    SELECT * FROM summ_stats WHERE neighborhood = ${neighborhood};
+    SELECT * FROM summ_stats WHERE neighborhood = '${neighborhood}';
   `, (err, data) => {
     if (err){
       console.log(err);
+      console.log('query failed');
       res.json([]);
     }else if (data.length === 0){
       res.json([]);
