@@ -80,6 +80,15 @@ const totalListingRange = {
   "11": [11, Number.MAX_SAFE_INTEGER]
 }
 
+const reviewTypeMap = {
+  'RATING': 'g.review_scores_rating',
+  'ACCURACY': 'g.review_scores_accuracy',
+  'CLEANLINESS': 'g.review_scores_cleanliness',
+  'CHECKIN': 'g.review_scores_checkin',
+  'COMMUNICATION': 'g.review_scores_communication',
+  'LOCATION': 'g.review_scores_location',
+  'VALUE': 'g.review_scores_value'
+}
 
 // Route 1: GET /search_features
 // After excluding those for long-term rental from general_listings, classify the 
@@ -348,16 +357,21 @@ const search_host_info_percentage = async function(req, res){
 
 // Rooute 7: return the top ranking listings based on review category
 const top_ranking = async function(req, res){
-  const reviewType = req.query.reviewType ?? 'Overall';
+  const reviewType = reviewTypeMap[req.query.reviewType ?? 'RATING'];
   const listingSize = req.query.listingSize ?? 10;
 
   connection.query(`
-  SELECT g.ind, g.review_scores_rating, g.review_scores_accuracy, g.review_scores_cleanliness,
-       g.review_scores_checkin, g.review_scores_communication, g.review_scores_location,
-       g.review_scores_rating, g.review_scores_value
-FROM General_listings g
-ORDER BY ${reviewType} DESC
-LIMIT ${listingSize};
+  SELECT g.ind AS ID,
+      g.review_scores_rating AS RATING, 
+      g.review_scores_accuracy AS ACCURACY, 
+      g.review_scores_cleanliness AS CLEANLINESS,
+      g.review_scores_checkin AS CHECKIN, 
+      g.review_scores_communication AS COMMUNICATION, 
+      g.review_scores_location AS LOCATION,
+      g.review_scores_value AS VALUE
+  FROM General_listings g
+  ORDER BY ${reviewType} DESC
+  LIMIT ${listingSize};
   `, (err, data) => {
     if (err){
       console.log(err);
@@ -376,7 +390,14 @@ const listing_info = async function(req, res){
   const listing_id = req.params.listing_id ?? 0;
 
   connection.query(`
-  SELECT g.neighborhood, g.area, g.latitude, g.longitude, g.general_price
+  SELECT g.neighborhood, g.area, g.latitude, g.longitude, g.general_price,
+      g.review_scores_rating AS RATING, 
+      g.review_scores_accuracy AS ACCURACY, 
+      g.review_scores_cleanliness AS CLEANLINESS,
+      g.review_scores_checkin AS CHECKIN, 
+      g.review_scores_communication AS COMMUNICATION, 
+      g.review_scores_location AS LOCATION,
+      g.review_scores_value AS VALUE
   FROM General_listings g
   WHERE g.ind=${listing_id}
   `, (err, data) => {
@@ -391,6 +412,101 @@ const listing_info = async function(req, res){
   })
 }
 
+// route 9: For each neighborhood, calculate the average per-capita price for Airbnb and Hotels,
+// and conclude whether one should accommodate in Airbnb or Hotels.
+// For each neighborhood, compute the aggregate ratings, and calculate the average for Airbnb and 
+// Hotels,and conclude whether one should accommodate in Airbnb or Hotels.
+const recommendation = async function(req, res){
+  const neighborhood = req.query.neighborhood ?? 'Inglewood';
+
+  connection.query(`
+    WITH airbnbs AS (SELECT g.*
+      FROM General_listings g
+      WHERE g.ind NOT IN
+      (SELECT a.ind
+      FROM
+        (SELECT ind, AVG(price)
+        FROM LongTermRental
+        WHERE date< CURDATE()
+        GROUP BY ind) a)),
+
+    #compute ratings for short-term airbnbs
+    airbnbs2 AS(SELECT ind, neighborhood,general_price,accommodates,
+          (review_scores_accuracy+
+          review_scores_cleanliness+
+          review_scores_checkin+
+          review_scores_communication+
+          review_scores_location+
+          review_scores_value) AS sum_ratings,
+      SUM(CASE WHEN review_scores_accuracy IS NULL THEN 0 ELSE 1 END+
+          CASE WHEN review_scores_cleanliness IS NULL THEN 0 ELSE 1 END+
+          CASE WHEN review_scores_checkin IS NULL THEN 0 ELSE 1 END+
+          CASE WHEN review_scores_communication IS NULL THEN 0 ELSE 1 END+
+          CASE WHEN review_scores_location IS NULL THEN 0 ELSE 1 END+
+          CASE WHEN review_scores_value IS NULL THEN 0 ELSE 1 END) AS count_ratings
+      FROM airbnbs
+      GROUP BY ind),
+
+    #compute per-capita price for airbnbs
+    airbnbs3 AS(SELECT *,
+                (sum_ratings/count_ratings/5)*100 AS percentage_ratings,
+                (general_price/accommodates) AS percapita_price
+             FROM airbnbs2),
+
+    #group by neighborhood
+    airbnbs4 AS(SELECT DISTINCT neighborhood,
+                AVG(percentage_ratings) AS avg_bnbratings,
+                AVG(percapita_price) AS avg_bnbprice
+            FROM airbnbs3
+            GROUP BY neighborhood),
+
+    #compute ratings for hotels
+    hotels2 AS(SELECT hotel_id,neighborhood,price,number_people,
+                (cleanness+service+amenities+facilities+ecofriendly) AS sum_ratings,
+            SUM(CASE WHEN cleanness IS NULL THEN 0 ELSE 1 END+
+            CASE WHEN service IS NULL THEN 0 ELSE 1 END+
+            CASE WHEN amenities IS NULL THEN 0 ELSE 1 END+
+            CASE WHEN facilities IS NULL THEN 0 ELSE 1 END+
+            CASE WHEN ecofriendly IS NULL THEN 0 ELSE 1 END)
+            AS count_ratings
+            FROM hotels
+            GROUP BY hotel_id),
+
+    #compute per-capita price for hotels
+    hotels3 AS(SELECT *,
+            (sum_ratings/count_ratings/10)*100 AS percentage_ratings,
+            (price/number_people) AS percapita_price
+            FROM hotels2),
+
+    #group results by neighborhood
+    hotels4 AS(SELECT DISTINCT neighborhood,
+              AVG(percentage_ratings) AS avg_hotelsratings,
+              AVG(percapita_price) AS avg_hotelsprice
+            FROM hotels3
+            GROUP BY neighborhood),
+
+    #join airbnbs and hotels, and display the better options
+    summ_stats AS(SELECT a.neighborhood AS neighborhood,
+        (CASE WHEN h.avg_hotelsratings>a.avg_bnbratings THEN 'Hotels' ELSE 'Airbnb' END) AS better_rating,
+        (CASE WHEN h.avg_hotelsprice<a.avg_bnbprice THEN 'Hotels' ELSE 'Airbnb' END) AS better_price
+        FROM airbnbs4 a
+        LEFT JOIN hotels4 h
+        ON a.neighborhood = h.neighborhood)
+        
+    #select results from designated neighborhood
+    SELECT * FROM summ_stats WHERE neighborhood = '${neighborhood}';
+  `, (err, data) => {
+    if (err){
+      console.log(err);
+      console.log('query failed');
+      res.json([]);
+    }else if (data.length === 0){
+      res.json([]);
+    }else{
+      res.json(data);
+    }
+  })
+}
 
 module.exports = {
   search_features,
@@ -400,5 +516,6 @@ module.exports = {
   search_host_info_count,
   search_host_info_percentage,
   top_ranking,
-  listing_info
+  listing_info,
+  recommendation
 }
