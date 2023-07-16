@@ -44,6 +44,43 @@ const bedsRange = {
   "9+": [9, 50]
 }
 
+const responseTimeRange = {
+  "All": [0, Number.MAX_SAFE_INTEGER],
+  "<1hr": [0, 1],
+  "<6hr": [0, 6],
+  "<24hr": [0, 24],
+  ">1D": [24, Number.MAX_SAFE_INTEGER]
+}
+
+const responseRateRange = {
+  "All": [0, 1],
+  "<0.5": [0, 0.5],
+  "0.5-0.8": [0.5, 0.8],
+  "0.8-1": [0.8, 1]
+}
+
+const acceptanceRateRange = {
+  "All": [0, 1],
+  "<0.5": [0, 0.5],
+  "0.5-0.8": [0.5, 0.8],
+  "0.8-1": [0.8, 1]
+}
+
+const superhostRange = {
+  "All": [0, 1],
+  "Yes": [1, 1],
+  "No": [0, 0]
+}
+
+const totalListingRange = {
+  "All": [1, Number.MAX_SAFE_INTEGER],
+  "1": [1, 1],
+  "2-5": [2, 5],
+  "6-10": [6, 10],
+  "11": [11, Number.MAX_SAFE_INTEGER]
+}
+
+
 // Route 1: GET /search_features
 // After excluding those for long-term rental from general_listings, classify the 
 // remaining listings by property features, and return the sum information for number 
@@ -179,11 +216,11 @@ const search_features_percentage = async function(req, res){
 // host information table, and based on the host information categories, return the sum information for number of airbnb listings
 // among different price ranges
 const search_host_info = async function(req, res){
-  const inputHost_response_time = req.query.inputHost_response_time ?? 0;
-  const inputHost_response_rate = req.query.inputHost_response_rate ?? 0;
-  const inputHost_acceptance_rate = req.query.inputHost_acceptance_rate ?? 0;
-  const inputHost_is_superhost = req.query.inputHost_is_superhost === 'true'? 1 : 0;
-  const inputHost_total_listings_count = req.query.inputHost_total_listings_count ?? 0;
+  const responseTime = responseTimeRange[req.query.responseTime ?? 'All'];
+  const responseRate = responseRateRange[req.query.responseRate ?? 'All'];
+  const acceptanceRate = acceptanceRateRange[req.query.acceptanceRate ?? 'All'];
+  const superhost = superhostRange[req.query.superhost ?? 'All'];
+  const totalListing = totalListingRange[req.query.totalListing ?? 'All'];
 
   connection.query(`
   SELECT
@@ -208,10 +245,11 @@ const search_host_info = async function(req, res){
           WHERE date< CURDATE()
           GROUP BY ind) a)) b
       JOIN Host_information h ON h.host_id=b.host_id
-  WHERE h.host_response_time='${inputHost_response_time}' && h.host_response_rate IS NOT NULL &&
-        h.host_response_rate='${inputHost_response_rate}' && h.host_acceptance_rate IS NOT NULL
-        && h.host_acceptance_rate='${inputHost_acceptance_rate}'
-        && h.host_is_superhost=='${inputHost_is_superhost}' && h.host_total_listings_count='${inputHost_total_listings_count}';
+  WHERE h.host_response_time>='${responseTime[0]}' && h.host_response_time<='${responseTime[1]}' && 
+        h.host_response_rate IS NOT NULL && h.host_response_rate>='${responseRate[0]}' && h.host_response_rate<='${responseRate[1]}' &&
+        h.host_acceptance_rate IS NOT NULL && h.host_acceptance_rate>='${acceptanceRate[0]}' && h.host_acceptance_rate<='${acceptanceRate[1]}' && 
+        h.host_is_superhost>='${superhost[0]}' && h.host_is_superhost<='${superhost[1]}' && 
+        h.host_total_listings_count>='${totalListing[0]}' && h.host_total_listings_count<='${totalListing[1]}';
   `, (err, data) => {
     if (err){
       console.log(err);
@@ -229,14 +267,14 @@ const search_host_info = async function(req, res){
 // Route 5: return the number of records for the retrived hotel data
 // app.get('/hotels', routes.hotels);
 const search_host_info_count = async function(req, res){
-  const inputHost_response_time = req.query.inputHost_response_time ?? 0;
-  const inputHost_response_rate = req.query.inputHost_response_rate ?? 0;
-  const inputHost_acceptance_rate = req.query.inputHost_acceptance_rate ?? 0;
-  const inputHost_is_superhost = req.query.inputHost_is_superhost === 'true'? 1 : 0;
-  const inputHost_total_listings_count = req.query.inputHost_total_listings_count ?? 0;
+  const responseTime = responseTimeRange[req.query.responseTime ?? 'All'];
+  const responseRate = responseRateRange[req.query.responseRate ?? 'All'];
+  const acceptanceRate = acceptanceRateRange[req.query.acceptanceRate ?? 'All'];
+  const superhost = superhostRange[req.query.superhost ?? 'All'];
+  const totalListing = totalListingRange[req.query.totalListing ?? 'All'];
 
   connection.query(`
-  SELECT COUNT(b.ind)
+  SELECT COUNT(b.ind) AS COUNT
   FROM
           (SELECT g.ind, g.host_id
            FROM General_listings g
@@ -248,10 +286,11 @@ const search_host_info_count = async function(req, res){
               WHERE date< CURDATE()
               GROUP BY ind) a)) b
           JOIN Host_information h ON h.host_id=b.host_id
-      WHERE h.host_response_time='${inputHost_response_time}' && h.host_response_rate IS NOT NULL &&
-            h.host_response_rate='${inputHost_response_rate}' && h.host_acceptance_rate IS NOT NULL
-            && h.host_acceptance_rate='${inputHost_acceptance_rate}'
-            && h.host_is_superhost=='${inputHost_is_superhost}' && h.host_total_listings_count='${inputHost_total_listings_count}';
+  WHERE h.host_response_time>='${responseTime[0]}' && h.host_response_time<='${responseTime[1]}' && 
+        h.host_response_rate IS NOT NULL && h.host_response_rate>='${responseRate[0]}' && h.host_response_rate<='${responseRate[1]}' &&
+        h.host_acceptance_rate IS NOT NULL && h.host_acceptance_rate>='${acceptanceRate[0]}' && h.host_acceptance_rate<='${acceptanceRate[1]}' && 
+        h.host_is_superhost>='${superhost[0]}' && h.host_is_superhost<='${superhost[1]}' && 
+        h.host_total_listings_count>='${totalListing[0]}' && h.host_total_listings_count<='${totalListing[1]}';
 
   `, (err, data) => {
     if (err){
@@ -268,11 +307,11 @@ const search_host_info_count = async function(req, res){
 // Route 6: calculate the percentage of the hotel records gained among the whole general_listings
 // app.get('/top_listing', routes.top_listing);
 const search_host_info_percentage = async function(req, res){
-  const inputHost_response_time = req.query.inputHost_response_time ?? 0;
-  const inputHost_response_rate = req.query.inputHost_response_rate ?? 0;
-  const inputHost_acceptance_rate = req.query.inputHost_acceptance_rate ?? 0;
-  const inputHost_is_superhost = req.query.inputHost_is_superhost === 'true'? 1 : 0;
-  const inputHost_total_listings_count = req.query.inputHost_total_listings_count ?? 0;
+  const responseTime = responseTimeRange[req.query.responseTime ?? 'All'];
+  const responseRate = responseRateRange[req.query.responseRate ?? 'All'];
+  const acceptanceRate = acceptanceRateRange[req.query.acceptanceRate ?? 'All'];
+  const superhost = superhostRange[req.query.superhost ?? 'All'];
+  const totalListing = totalListingRange[req.query.totalListing ?? 'All'];
 
   connection.query(`
   SELECT 1.0*
@@ -288,12 +327,13 @@ const search_host_info_percentage = async function(req, res){
               WHERE date< CURDATE()
               GROUP BY ind) a)) b
           JOIN Host_information h ON h.host_id=b.host_id
-        WHERE h.host_response_time='${inputHost_response_time}' && h.host_response_rate IS NOT NULL &&
-            h.host_response_rate='${inputHost_response_rate}' && h.host_acceptance_rate IS NOT NULL
-            && h.host_acceptance_rate='${inputHost_acceptance_rate}'
-            && h.host_is_superhost=='${inputHost_is_superhost}' && h.host_total_listings_count='${inputHost_total_listings_count}')/
+        WHERE h.host_response_time>='${responseTime[0]}' && h.host_response_time<='${responseTime[1]}' && 
+              h.host_response_rate IS NOT NULL && h.host_response_rate>='${responseRate[0]}' && h.host_response_rate<='${responseRate[1]}' &&
+              h.host_acceptance_rate IS NOT NULL && h.host_acceptance_rate>='${acceptanceRate[0]}' && h.host_acceptance_rate<='${acceptanceRate[1]}' && 
+              h.host_is_superhost>='${superhost[0]}' && h.host_is_superhost<='${superhost[1]}' && 
+              h.host_total_listings_count>='${totalListing[0]}' && h.host_total_listings_count<='${totalListing[1]}')/
        (SELECT COUNT(g.ind)
-        FROM General_listings g) * 100 AS Percentage;
+        FROM General_listings g) * 100 AS PERCENTAGE;
   `, (err, data) => {
     if (err){
       console.log(err);
