@@ -57,7 +57,7 @@ export default function TopListing() {
           label='Select Review Type'
           select value={reviewType} sx={{width:200}} onChange={(e) => setReviewType(e.target.value)}>
             <MenuItem value='RATING'>Rating</MenuItem>
-            <MenuItem value='ACCURACY'>Rating</MenuItem>
+            <MenuItem value='ACCURACY'>Accuracy</MenuItem>
             <MenuItem value='CLEANLINESS'>Cleanliness</MenuItem>
             <MenuItem value='CHECKIN'>Check-in</MenuItem>
             <MenuItem value='COMMUNICATION'>Communication</MenuItem>
