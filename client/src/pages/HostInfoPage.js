@@ -88,9 +88,7 @@ export default function HostInfoPage() {
             select value={responseTime} sx={{width:200}} onChange={(e) => setResponseTime(e.target.value)}>
               <MenuItem value='All'>All</MenuItem>
               <MenuItem value='<1hr'>{'\u003C'} 1 Hour</MenuItem>
-              <MenuItem value='<6hr'>{'\u003C'} 6 Hours</MenuItem>
-              <MenuItem value='<24hr>'>{'\u003C'} 24 Hours</MenuItem>
-              <MenuItem value='>1D'>{'\u003E'} 1 Day</MenuItem>
+              <MenuItem value='1hr'>{'\u003E'} 1 Hour</MenuItem>
             </TextField>
           </Grid>
 
@@ -100,9 +98,8 @@ export default function HostInfoPage() {
             label='Select Response Rate'
             select value={responseRate} sx={{width:200}} onChange={(e) => setResponseRate(e.target.value)}>
               <MenuItem value='All'>All</MenuItem>
-              <MenuItem value='<0.5'>{'\u003C'} 0.5</MenuItem>
-              <MenuItem value='0.5-0.8'>0.5-0.8</MenuItem>
-              <MenuItem value='0.8-1'>0.8-1</MenuItem>
+              <MenuItem value='<0.9'>{'\u003C'} 0.9</MenuItem>
+              <MenuItem value='0.9'>{'\u003E'} 0.9</MenuItem>
             </TextField>
           </Grid>
 
@@ -112,9 +109,8 @@ export default function HostInfoPage() {
             label='Select Acceptance Rate'
             select value={acceptanceRate} sx={{width:200}} onChange={(e) => setAcceptanceRate(e.target.value)}>
               <MenuItem value='All'>All</MenuItem>
-              <MenuItem value='<0.5'>{'\u003C'} 0.5</MenuItem>
-              <MenuItem value='0.5-0.8'>0.5-0.8</MenuItem>
-              <MenuItem value='0.8-1'>0.8-1</MenuItem>
+              <MenuItem value='<0.9'>{'\u003C'} 0.9</MenuItem>
+              <MenuItem value='0.9'>{'\u003E'} 0.9</MenuItem>
             </TextField>
           </Grid>
 
@@ -135,10 +131,8 @@ export default function HostInfoPage() {
             label='Select Total Listing'
             select value={totalListing} sx={{width:200}} onChange={(e) => setTotalListing(e.target.value)}>
               <MenuItem value='All'>All</MenuItem>
-              <MenuItem value='1'>Only 1</MenuItem>
-              <MenuItem value='2-5'>2-5</MenuItem>
-              <MenuItem value='6-10'>6-10</MenuItem>
-              <MenuItem value='11'>11+</MenuItem>
+              <MenuItem value='<5'>{'\u003C'} 5</MenuItem>
+              <MenuItem value='5'>{'\u003E'} 5</MenuItem>
             </TextField>
           </Grid>
 

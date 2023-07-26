@@ -85,8 +85,6 @@ export default function PropertyFeaturesPage() {
               <MenuItem value='All'>All</MenuItem>
               <MenuItem value='Entire Home/Apt'>Entire Home/Apt</MenuItem>
               <MenuItem value='Private Room'>Private Room</MenuItem>
-              <MenuItem value='Hotel Room'>Hotel Room</MenuItem>
-              <MenuItem value='Shared Room'>Shared Room</MenuItem>
             </TextField>
           </Grid>
 
@@ -98,8 +96,7 @@ export default function PropertyFeaturesPage() {
             <MenuItem value='All'>All</MenuItem>
               <MenuItem value='1-2'>1-2</MenuItem>
               <MenuItem value='3-4'>3-4</MenuItem>
-              <MenuItem value='5-8'>5-8</MenuItem>
-              <MenuItem value='9-16'>9+</MenuItem>
+              <MenuItem value='5'>5+</MenuItem>
             </TextField>
           </Grid>
 
@@ -111,8 +108,7 @@ export default function PropertyFeaturesPage() {
             <MenuItem value='All'>All</MenuItem>
               <MenuItem value='1-2'>1-2</MenuItem>
               <MenuItem value='3-4'>3-4</MenuItem>
-              <MenuItem value='5-8'>5-8</MenuItem>
-              <MenuItem value='9-16'>9+</MenuItem>
+              <MenuItem value='5'>5+</MenuItem>
             </TextField>
           </Grid>
 
@@ -124,8 +120,7 @@ export default function PropertyFeaturesPage() {
             <MenuItem value='All'>All</MenuItem>
               <MenuItem value='1-2'>1-2</MenuItem>
               <MenuItem value='3-4'>3-4</MenuItem>
-              <MenuItem value='5-8'>5-8</MenuItem>
-              <MenuItem value='9-16'>9+</MenuItem>
+              <MenuItem value='5'>5+</MenuItem>
             </TextField>
           </Grid>
 

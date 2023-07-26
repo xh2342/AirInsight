@@ -13,57 +13,48 @@ connection.connect((err) => err && console.log(err));
 
 // maps mapping inputs to query conditions
 const roomTypeDict = {
-  "All": [0, 3],
+  "All": [0, 1],
   "Entire Home/Apt": [0, 0],
-  "Private Room": [1, 1],
-  "Hotel Roon": [2, 2],
-  "Shared Room": [3, 3]
+  "Private Room": [1, 1]
 }
 
 const accommodateRange = {
   "All": [0, 16],
   "1-2": [1, 2],
   "3-4": [3, 4],
-  "5-8": [5, 8],
-  "9+": [9, 16]
+  "5": [5, 16]
 }
 
 const bedroomsRange = {
   "All": [1, 25],
   "1-2": [1, 2],
   "3-4": [3, 4],
-  "5-8": [5, 8],
-  "9+": [9, 25]
+  "5": [5, 25]
 }
 
 const bedsRange = {
-  "All": [1, 50],
+  "All": [1, 25],
   "1-2": [1, 2],
   "3-4": [3, 4],
-  "5-8": [5, 8],
-  "9+": [9, 50]
+  "5": [5, 25]
 }
 
 const responseTimeRange = {
   "All": [0, Number.MAX_SAFE_INTEGER],
   "<1hr": [0, 1],
-  "<6hr": [0, 6],
-  "<24hr": [0, 24],
-  ">1D": [24, Number.MAX_SAFE_INTEGER]
+  "1hr": [1, Number.MAX_SAFE_INTEGER]
 }
 
 const responseRateRange = {
   "All": [0, 1],
-  "<0.5": [0, 0.5],
-  "0.5-0.8": [0.5, 0.8],
-  "0.8-1": [0.8, 1]
+  "<0.9": [0, 0.9],
+  "0.9": [0.9, 1]
 }
 
 const acceptanceRateRange = {
   "All": [0, 1],
-  "<0.5": [0, 0.5],
-  "0.5-0.8": [0.5, 0.8],
-  "0.8-1": [0.8, 1]
+  "<0.9": [0, 0.9],
+  "0.9": [0.9, 1]
 }
 
 const superhostRange = {
@@ -74,10 +65,8 @@ const superhostRange = {
 
 const totalListingRange = {
   "All": [1, Number.MAX_SAFE_INTEGER],
-  "1": [1, 1],
-  "2-5": [2, 5],
-  "6-10": [6, 10],
-  "11": [11, Number.MAX_SAFE_INTEGER]
+  "<5": [1, 5],
+  "5": [5, Number.MAX_SAFE_INTEGER]
 }
 
 const reviewTypeMap = {
@@ -105,26 +94,23 @@ const search_features = async function(req, res){
 
   connection.query(`
   SELECT
-      SUM(IF(b.price<50,1,0)) as 'UNDER 50',
-      SUM(IF(b.price BETWEEN 50 AND 99,1,0)) as '50-99',
-      SUM(IF(b.price BETWEEN 100 AND 149,1,0)) as '100-149',
-      SUM(IF(b.price BETWEEN 150 AND 199,1,0)) as '150-199',
-      SUM(IF(b.price BETWEEN 200 AND 249,1,0)) as '200-249',
-      SUM(IF(b.price BETWEEN 250 AND 299,1,0)) as '250-299',
-      SUM(IF(b.price BETWEEN 300 AND 349,1,0)) as '300-349',
-      SUM(IF(b.price BETWEEN 350 AND 399,1,0)) as '350-399',
-      SUM(IF(b.price>=400,1,0)) as 'OVER 400',
-      SUM(IF(b.price IS NULL, 1, 0)) as 'Not Filled In (NULL)'
-      FROM
-          (SELECT g.ind, g.room_type, g.accommodates, g.bedrooms, g.beds, g.general_price AS price
-           FROM General_listings g
-           WHERE g.ind NOT IN
-           (SELECT a.ind
-           FROM
-             (SELECT ind, AVG(price)
-              FROM LongTermRental
-              WHERE date< CURDATE()
-              GROUP BY ind) a)) b
+  SUM(IF(b.price<50,1,0)) as 'UNDER 50',
+  SUM(IF(b.price BETWEEN 50 AND 99,1,0)) as '50-99',
+  SUM(IF(b.price BETWEEN 100 AND 149,1,0)) as '100-149',
+  SUM(IF(b.price BETWEEN 150 AND 199,1,0)) as '150-199',
+  SUM(IF(b.price BETWEEN 200 AND 249,1,0)) as '200-249',
+  SUM(IF(b.price>=250,1,0)) as 'OVER 250',
+  SUM(IF(b.price IS NULL, 1, 0)) as 'Not Filled In (NULL)'
+  FROM
+      (SELECT g.ind, g.room_type, g.accommodates, g.bedrooms, g.beds, g.general_price AS price
+       FROM General_listings g
+       WHERE g.ind NOT IN
+       (SELECT a.ind
+       FROM
+         (SELECT l.ind, AVG(price)
+          FROM General_listings g JOIN LongTermRental l ON g.ind = l.ind
+          WHERE date< CURDATE()
+          GROUP BY l.ind) a)) b
       WHERE b.room_type>='${roomType[0]}' && b.room_type<='${roomType[1]}' && 
             b.accommodates >= '${accommodatesLow}' && b.accommodates <= '${accommodatesHigh}' &&
             b.bedrooms >='${bedroomsLow}' && b.bedrooms <= '${bedroomsHigh}' &&
@@ -154,15 +140,15 @@ const search_features_count = async function(req, res){
   connection.query(`
   SELECT COUNT(b.ind) AS COUNT
   FROM
-        (SELECT g.ind, g.room_type, g.accommodates, g.bedrooms, g.beds, g.general_price
-        FROM General_listings g
-        WHERE g.ind NOT IN
-        (SELECT a.ind
-        FROM
-          (SELECT ind, AVG(price)
-            FROM LongTermRental
-            WHERE date< CURDATE()
-            GROUP BY ind) a)) b
+      (SELECT g.ind, g.room_type, g.accommodates, g.bedrooms, g.beds
+       FROM General_listings g
+       WHERE g.ind NOT IN
+       (SELECT a.ind
+       FROM
+         (SELECT l.ind
+          FROM LongTermRental l
+          WHERE date< CURDATE()
+          ) a)) b
   WHERE b.room_type>='${roomType[0]}' && b.room_type<='${roomType[1]}' && 
         b.accommodates >= '${accommodatesLow}' && b.accommodates <= '${accommodatesHigh}' &&
         b.bedrooms >='${bedroomsLow}' && b.bedrooms <= '${bedroomsHigh}' &&
@@ -192,17 +178,17 @@ const search_features_percentage = async function(req, res){
 
   connection.query(`
   SELECT 1.0*
-       (SELECT COUNT(b.ind) 
+       (SELECT COUNT(b.ind)
         FROM
-      (SELECT g.ind, g.general_price, g.room_type, g.accommodates, g.bedrooms, g.beds
+      (SELECT g.ind, g.room_type, g.accommodates, g.bedrooms, g.beds
        FROM General_listings g
        WHERE g.ind NOT IN
        (SELECT a.ind
        FROM
-         (SELECT ind, AVG(price)
-          FROM LongTermRental
+         (SELECT l.ind
+          FROM LongTermRental l
           WHERE date< CURDATE()
-          GROUP BY ind) a)) b
+          ) a)) b
         WHERE b.room_type>='${roomType[0]}' && b.room_type<='${roomType[1]}' && 
               b.accommodates >= '${accommodatesLow}' && b.accommodates <= '${accommodatesHigh}' &&
               b.bedrooms >='${bedroomsLow}' && b.bedrooms <= '${bedroomsHigh}' &&
@@ -233,27 +219,24 @@ const search_host_info = async function(req, res){
 
   connection.query(`
   SELECT
-  SUM(IF(b.price<50,1,0)) as 'UNDER 50',
-  SUM(IF(b.price BETWEEN 50 AND 99,1,0)) as '50-99',
-  SUM(IF(b.price BETWEEN 100 AND 149,1,0)) as '100-149',
-  SUM(IF(b.price BETWEEN 150 AND 199,1,0)) as '150-199',
-  SUM(IF(b.price BETWEEN 200 AND 249,1,0)) as '200-249',
-  SUM(IF(b.price BETWEEN 250 AND 299,1,0)) as '250-299',
-  SUM(IF(b.price BETWEEN 300 AND 349,1,0)) as '300-349',
-  SUM(IF(b.price BETWEEN 350 AND 399,1,0)) as '350-399',
-  SUM(IF(b.price>=400,1,0)) as 'OVER 400',
-  SUM(IF(b.price IS NULL, 1, 0)) as 'Not Filled In (NULL)'
-  FROM
-      (SELECT g.ind, g.host_id, g.general_price AS price
-       FROM General_listings g
-       WHERE g.ind NOT IN
-       (SELECT a.ind
-       FROM
-         (SELECT ind, AVG(price)
-          FROM LongTermRental
-          WHERE date< CURDATE()
-          GROUP BY ind) a)) b
-      JOIN Host_information h ON h.host_id=b.host_id
+      SUM(IF(b.price<50,1,0)) as 'UNDER 50',
+      SUM(IF(b.price BETWEEN 50 AND 99,1,0)) as '50-99',
+      SUM(IF(b.price BETWEEN 100 AND 149,1,0)) as '100-149',
+      SUM(IF(b.price BETWEEN 150 AND 199,1,0)) as '150-199',
+      SUM(IF(b.price BETWEEN 200 AND 249,1,0)) as '200-249',
+      SUM(IF(b.price>=250,1,0)) as 'OVER 250',
+      SUM(IF(b.price IS NULL, 1, 0)) as 'Not Filled In (NULL)'
+      FROM
+          (SELECT g.ind, g.host_id, g.general_price AS price
+           FROM General_listings g
+           WHERE g.ind NOT IN
+           (SELECT a.ind
+           FROM
+             (SELECT l.ind, AVG(price)
+              FROM General_listings g JOIN LongTermRental l ON g.ind = l.ind
+              WHERE date< CURDATE()
+              GROUP BY l.ind) a)) b
+          JOIN Host_information h ON h.host_id=b.host_id
   WHERE h.host_response_time>='${responseTime[0]}' && h.host_response_time<='${responseTime[1]}' && 
         h.host_response_rate IS NOT NULL && h.host_response_rate>='${responseRate[0]}' && h.host_response_rate<='${responseRate[1]}' &&
         h.host_acceptance_rate IS NOT NULL && h.host_acceptance_rate>='${acceptanceRate[0]}' && h.host_acceptance_rate<='${acceptanceRate[1]}' && 
@@ -285,16 +268,16 @@ const search_host_info_count = async function(req, res){
   connection.query(`
   SELECT COUNT(b.ind) AS COUNT
   FROM
-          (SELECT g.ind, g.host_id
-           FROM General_listings g
-           WHERE g.ind NOT IN
-           (SELECT a.ind
-           FROM
-             (SELECT ind, AVG(price)
-              FROM LongTermRental
-              WHERE date< CURDATE()
-              GROUP BY ind) a)) b
-          JOIN Host_information h ON h.host_id=b.host_id
+            (SELECT g.ind, g.host_id
+             FROM General_listings g
+             WHERE g.ind NOT IN
+             (SELECT a.ind
+             FROM
+               (SELECT l.ind
+                FROM LongTermRental l
+                WHERE date< CURDATE()
+                ) a)) b
+            JOIN Host_information h ON h.host_id=b.host_id
   WHERE h.host_response_time>='${responseTime[0]}' && h.host_response_time<='${responseTime[1]}' && 
         h.host_response_rate IS NOT NULL && h.host_response_rate>='${responseRate[0]}' && h.host_response_rate<='${responseRate[1]}' &&
         h.host_acceptance_rate IS NOT NULL && h.host_acceptance_rate>='${acceptanceRate[0]}' && h.host_acceptance_rate<='${acceptanceRate[1]}' && 
@@ -324,18 +307,18 @@ const search_host_info_percentage = async function(req, res){
 
   connection.query(`
   SELECT 1.0*
-       (SELECT COUNT(b.ind)
-        FROM
-          (SELECT g.ind, g.host_id
-           FROM General_listings g
-           WHERE g.ind NOT IN
-           (SELECT a.ind
-           FROM
-             (SELECT ind, AVG(price)
-              FROM LongTermRental
-              WHERE date< CURDATE()
-              GROUP BY ind) a)) b
-          JOIN Host_information h ON h.host_id=b.host_id
+  (SELECT COUNT(b.ind)
+   FROM
+     (SELECT g.ind, g.host_id
+      FROM General_listings g
+      WHERE g.ind NOT IN
+      (SELECT a.ind
+      FROM
+        (SELECT l.ind
+         FROM LongTermRental l
+         WHERE date< CURDATE()
+         ) a)) b
+     JOIN Host_information h ON h.host_id=b.host_id
         WHERE h.host_response_time>='${responseTime[0]}' && h.host_response_time<='${responseTime[1]}' && 
               h.host_response_rate IS NOT NULL && h.host_response_rate>='${responseRate[0]}' && h.host_response_rate<='${responseRate[1]}' &&
               h.host_acceptance_rate IS NOT NULL && h.host_acceptance_rate>='${acceptanceRate[0]}' && h.host_acceptance_rate<='${acceptanceRate[1]}' && 
