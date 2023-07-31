@@ -1,6 +1,6 @@
 - Font
   - Nunito https://fonts.google.com/specimen/Nunito?query=nunito
-  - https://fonts.googleapis.com/css?family=Nunito
+  - For css https://fonts.googleapis.com/css?family=Nunito
   - Georgia (come with system)
  
 - Color Palette:
