@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, {  useState, useEffect ,useRef} from 'react';
 import { Container, Grid, TextField, Button } from '@mui/material';
 
 const config = require('../config.json');
@@ -11,7 +11,7 @@ export default function HotelsPage() {
   const google = window.google
   const [map, setMap] = useState(null);
   const [markers, setMarkers] = useState([]);
-
+  const mapRef = useRef(null); 
   const [isGoogleMapsApiLoaded, setIsGoogleMapsApiLoaded] = useState(false);
   const [neighborhood, setNeighborhood] = useState('');
   const [neighborhoodList, setneighborhoodList] = useState([]);
@@ -21,13 +21,24 @@ export default function HotelsPage() {
   const [hotels, setHotels] = useState([]);
   const [midpoint, setMidpoint] = useState({ lat: 34.050416, lng: -118.243862 }); // Set default value
 
-  function initMap()  {
+  function initMap() {
+
+    changeBackgroundImg()
     console.log("midpoint", midpoint)
     const mapOptions = {
       center: { lat: midpoint.lat, lng: midpoint.lng },
       zoom: 11,
     };
-    
+
+    if (!mapRef.current) {
+      mapRef.current = new window.google.maps.Map(document.getElementById('map'), mapOptions);
+    }
+
+      fetch(`http://${config.server_host}:${config.server_port}/neighborhoods`)
+    .then((res) => res.json())
+    .then((resJson) => {
+      setneighborhoodList(resJson.map((obj) => obj.neighborhood.toLowerCase()));
+    })
     try {
      setMap(new window.google.maps.Map(document.getElementById('map'), mapOptions));
       
@@ -62,29 +73,28 @@ export default function HotelsPage() {
 
   };
 
- // Fetch midpoint
-  useEffect(() => {   
-  }, [neighborhood]);
-
-// Fetch airbnb listings
-useEffect(() => {
-}, [neighborhood]);
-
-// Fetch hotels listings
-useEffect(() => {
-}, [neighborhood]);
-
+  useEffect(() => {
+    // Check if the Google Maps API script has been loaded before initializing the map
+    if (window.google && window.google.maps) {
+      initMap();
+    }
+  }, [airbnbs, hotels]);
 
   useEffect(() => {
     window.initMap = function() {
       setIsGoogleMapsApiLoaded(true);
-      initMap();
     };
-    
+  
     if (!isGoogleMapsApiLoaded) {
       loadGoogleMapsAPIScript();
     }
   }, [isGoogleMapsApiLoaded, airbnbs, hotels]);
+  
+  useEffect(() => {
+    if (isGoogleMapsApiLoaded) {
+      initMap();
+    }
+  }, [isGoogleMapsApiLoaded]);
 
   function loadGoogleMapsAPIScript() {
     try {
@@ -146,11 +156,7 @@ useEffect(() => {
     });  
 }
 
-  fetch(`http://${config.server_host}:${config.server_port}/neighborhoods`)
-    .then((res) => res.json())
-    .then((resJson) => {
-      setneighborhoodList(resJson.map((obj) => obj.neighborhood.toLowerCase()));
-    })
+
 
   const search = () => {
     fetch(`http://${config.server_host}:${config.server_port}/rec?neighborhood=${neighborhood}`)
@@ -168,7 +174,6 @@ useEffect(() => {
     });;
   };
 
-  changeBackgroundImg();
 
   function btnListener(){
     var text = document.getElementById("txt").value;
