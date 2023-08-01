@@ -402,82 +402,84 @@ const listing_info = async function(req, res){
 const recommendation = async function(req, res){
   const neighborhood = req.query.neighborhood ?? 'Inglewood';
 
-  connection.query(`
-    WITH airbnbs AS (SELECT g.*
-      FROM General_listings g
-      WHERE g.ind NOT IN
-      (SELECT a.ind
-      FROM
-        (SELECT ind, AVG(price)
-        FROM LongTermRental
-        WHERE date< CURDATE()
-        GROUP BY ind) a)),
-
-    #compute ratings for short-term airbnbs
-    airbnbs2 AS(SELECT ind, neighborhood,general_price,accommodates,
-          (review_scores_accuracy+
-          review_scores_cleanliness+
-          review_scores_checkin+
-          review_scores_communication+
-          review_scores_location+
-          review_scores_value) AS sum_ratings,
-      SUM(CASE WHEN review_scores_accuracy IS NULL THEN 0 ELSE 1 END+
-          CASE WHEN review_scores_cleanliness IS NULL THEN 0 ELSE 1 END+
-          CASE WHEN review_scores_checkin IS NULL THEN 0 ELSE 1 END+
-          CASE WHEN review_scores_communication IS NULL THEN 0 ELSE 1 END+
-          CASE WHEN review_scores_location IS NULL THEN 0 ELSE 1 END+
-          CASE WHEN review_scores_value IS NULL THEN 0 ELSE 1 END) AS count_ratings
-      FROM airbnbs
-      GROUP BY ind),
-
-    #compute per-capita price for airbnbs
-    airbnbs3 AS(SELECT *,
-                (sum_ratings/count_ratings/5)*100 AS percentage_ratings,
-                (general_price/accommodates) AS percapita_price
-             FROM airbnbs2),
-
-    #group by neighborhood
-    airbnbs4 AS(SELECT DISTINCT neighborhood,
-                AVG(percentage_ratings) AS avg_bnbratings,
-                AVG(percapita_price) AS avg_bnbprice
-            FROM airbnbs3
-            GROUP BY neighborhood),
-
-    #compute ratings for hotels
-    hotels2 AS(SELECT hotel_id,neighborhood,price,number_people,
-                (cleanness+service+amenities+facilities+ecofriendly) AS sum_ratings,
-            SUM(CASE WHEN cleanness IS NULL THEN 0 ELSE 1 END+
-            CASE WHEN service IS NULL THEN 0 ELSE 1 END+
-            CASE WHEN amenities IS NULL THEN 0 ELSE 1 END+
-            CASE WHEN facilities IS NULL THEN 0 ELSE 1 END+
-            CASE WHEN ecofriendly IS NULL THEN 0 ELSE 1 END)
-            AS count_ratings
-            FROM hotels
-            GROUP BY hotel_id),
-
-    #compute per-capita price for hotels
-    hotels3 AS(SELECT *,
-            (sum_ratings/count_ratings/10)*100 AS percentage_ratings,
-            (price/number_people) AS percapita_price
-            FROM hotels2),
-
-    #group results by neighborhood
-    hotels4 AS(SELECT DISTINCT neighborhood,
-              AVG(percentage_ratings) AS avg_hotelsratings,
-              AVG(percapita_price) AS avg_hotelsprice
-            FROM hotels3
-            GROUP BY neighborhood),
-
-    #join airbnbs and hotels, and display the better options
-    summ_stats AS(SELECT a.neighborhood AS neighborhood,
-        (CASE WHEN h.avg_hotelsratings>a.avg_bnbratings THEN 'Hotels' ELSE 'Airbnb' END) AS better_rating,
-        (CASE WHEN h.avg_hotelsprice<a.avg_bnbprice THEN 'Hotels' ELSE 'Airbnb' END) AS better_price
-        FROM airbnbs4 a
-        LEFT JOIN hotels4 h
-        ON a.neighborhood = h.neighborhood)
-        
-    #select results from designated neighborhood
-    SELECT * FROM summ_stats WHERE neighborhood = '${neighborhood}';
+  connection.query(`WITH airbnbs AS (
+    SELECT g.ind, g.neighborhood, g.general_price, g.accommodates,
+      COALESCE(g.review_scores_accuracy, 0) +
+      COALESCE(g.review_scores_cleanliness, 0) +
+      COALESCE(g.review_scores_checkin, 0) +
+      COALESCE(g.review_scores_communication, 0) +
+      COALESCE(g.review_scores_location, 0) +
+      COALESCE(g.review_scores_value, 0) AS sum_ratings,
+      CASE
+        WHEN g.review_scores_accuracy IS NOT NULL THEN 1 ELSE 0 END +
+      CASE
+        WHEN g.review_scores_cleanliness IS NOT NULL THEN 1 ELSE 0 END +
+      CASE
+        WHEN g.review_scores_checkin IS NOT NULL THEN 1 ELSE 0 END +
+      CASE
+        WHEN g.review_scores_communication IS NOT NULL THEN 1 ELSE 0 END +
+      CASE
+        WHEN g.review_scores_location IS NOT NULL THEN 1 ELSE 0 END +
+      CASE
+        WHEN g.review_scores_value IS NOT NULL THEN 1 ELSE 0 END AS count_ratings
+    FROM General_listings g
+    WHERE g.ind NOT IN (
+      SELECT ltr.ind
+      FROM LongTermRental ltr
+      WHERE ltr.date < CURDATE()
+      GROUP BY ltr.ind
+    )
+  ),
+  
+  airbnbs_stats AS (
+    SELECT ind, neighborhood,
+      (sum_ratings / count_ratings / 5) * 100 AS percentage_ratings,
+      (general_price / accommodates) AS percapita_price
+    FROM airbnbs
+  ),
+  
+  airbnb_aggregates AS (
+    SELECT neighborhood,
+      AVG(percentage_ratings) AS avg_bnbratings,
+      AVG(percapita_price) AS avg_bnbprice
+    FROM airbnbs_stats
+    GROUP BY neighborhood
+  ),
+  
+  hotels_stats AS (
+    SELECT h.hotel_id, h.neighborhood, h.price, h.number_people,
+      (COALESCE(h.cleanness, 0) + COALESCE(h.service, 0) + COALESCE(h.amenities, 0) +
+      COALESCE(h.facilities, 0) + COALESCE(h.ecofriendly, 0)) AS sum_ratings,
+      (CASE WHEN h.cleanness IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN h.service IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN h.amenities IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN h.facilities IS NOT NULL THEN 1 ELSE 0 END +
+      CASE WHEN h.ecofriendly IS NOT NULL THEN 1 ELSE 0 END) AS count_ratings
+    FROM hotels h
+    GROUP BY h.hotel_id
+  ),
+  
+  hotels_aggregates AS (
+    SELECT neighborhood,
+      AVG((sum_ratings / count_ratings / 10) * 100) AS avg_hotelsratings,
+      AVG(price / number_people) AS avg_hotelsprice
+    FROM hotels_stats
+    GROUP BY neighborhood
+  ),
+  
+  combined_stats AS (
+    SELECT a.neighborhood, a.avg_bnbratings, a.avg_bnbprice,
+      h.avg_hotelsratings, h.avg_hotelsprice,
+      (CASE WHEN h.avg_hotelsratings > a.avg_bnbratings THEN 'Hotels' ELSE 'Airbnb' END) AS better_rating,
+      (CASE WHEN h.avg_hotelsprice < a.avg_bnbprice THEN 'Hotels' ELSE 'Airbnb' END) AS better_price
+    FROM airbnb_aggregates a
+    LEFT JOIN hotels_aggregates h
+    ON a.neighborhood = h.neighborhood
+  )
+  
+  SELECT *
+  FROM combined_stats
+  WHERE neighborhood = '${neighborhood}';
   `, (err, data) => {
     if (err){
       console.log(err);
