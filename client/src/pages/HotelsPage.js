@@ -180,7 +180,7 @@ export default function HotelsPage() {
     if (!text){
       alert("Neighborhood cannot be empty!")
     }else if (!neighborhoodList.includes(text.toLowerCase())){
-      alert("Neighborhood '"+text.toLowerCase()+"' doesn't exist!")
+      alert("Neighborhood '"+text+"' doesn't exist!")
     }else{
       document.getElementById('map-result').style.visibility = 'visible';
       search();
