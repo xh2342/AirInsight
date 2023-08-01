@@ -28,7 +28,14 @@ app.get('/top_ranking', routes.top_ranking);
 app.get('/top_listing/:listing_id', routes.listing_info);
 // get recommendation for accommodation based on price per-capita
 app.get('/rec', routes.recommendation);
-
+// get the middle point for maps by neighborhood, used for mapping
+app.get('/midpoint',routes.neighborhood_midpoint);
+// get the airbnb listings for the given neighborhood
+app.get('/airbnb_neighborhood',routes.airbnb_neighborhood);
+// get the hotels listings for the given neighborhood
+app.get('/hotels_neighborhood',routes.hotels_neighborhood);
+// get all the neighborhoods in the data
+app.get('/neighborhoods',routes.neighborhoods);
 
 app.listen(config.server_port, () => {
   console.log(`Server running at http://${config.server_host}:${config.server_port}/`)

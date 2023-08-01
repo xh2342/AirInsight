@@ -491,6 +491,90 @@ const recommendation = async function(req, res){
   })
 }
 
+// route 10: get the midpoint for each neighborhood
+const neighborhood_midpoint = async function(req, res){
+  const neighborhood = req.query.neighborhood ?? 'Inglewood';
+
+  connection.query(`
+  SELECT g.neighborhood, avg(g.latitude) as mid_lat, avg(g.longitude) as mid_long
+  FROM General_listings g
+  WHERE g.neighborhood='${neighborhood}'
+  GROUP BY g.neighborhood;
+  `, (err, data) => {
+    if (err){
+      console.log(err);
+      res.json([]);
+    }else if (data.length === 0){
+      res.json([]);
+    }else{
+      res.json(data);
+    }
+  })
+}
+
+// route 11: get all airbnb listings for the given neighborhood
+const airbnb_neighborhood = async function(req, res){
+  const neighborhood = req.query.neighborhood ?? 'Inglewood';
+
+  connection.query(`
+  SELECT g.neighborhood, g.area, g.latitude, g.longitude, g.general_price,
+      g.review_scores_rating AS RATING, 
+      g.review_scores_accuracy AS ACCURACY, 
+      g.review_scores_cleanliness AS CLEANLINESS,
+      g.review_scores_checkin AS CHECKIN, 
+      g.review_scores_communication AS COMMUNICATION, 
+      g.review_scores_location AS LOCATION,
+      g.review_scores_value AS VALUE
+  FROM General_listings g
+  WHERE g.neighborhood='${neighborhood}';
+  `, (err, data) => {
+    if (err){
+      console.log(err);
+      res.json([]);
+    }else if (data.length === 0){
+      res.json([]);
+    }else{
+      res.json(data);
+    }
+  })
+}
+
+// route 12: get all hotels listings for the given neighborhood
+const hotels_neighborhood = async function(req, res){
+  const neighborhood = req.query.neighborhood ?? 'Inglewood';
+
+  connection.query(`
+  SELECT h.hotel_id,h.neighborhood, h.latitude, h.longitude
+  FROM hotels h
+  WHERE h.neighborhood='${neighborhood}';
+  `, (err, data) => {
+    if (err){
+      console.log(err);
+      res.json([]);
+    }else if (data.length === 0){
+      res.json([]);
+    }else{
+      res.json(data);
+    }
+  })
+}
+
+// route 13: get all neighborhoods in the data
+const neighborhoods = async function(req, res){
+
+  connection.query(`
+  select distinct neighborhood from General_listings order by neighborhood;
+  `, (err, data) => {
+    if (err){
+      console.log(err);
+      res.json([]);
+    }else if (data.length === 0){
+      res.json([]);
+    }else{
+      res.json(data);
+    }
+  })
+}
 module.exports = {
   search_features,
   search_features_count,
@@ -500,5 +584,9 @@ module.exports = {
   search_host_info_percentage,
   top_ranking,
   listing_info,
-  recommendation
+  recommendation,
+  neighborhood_midpoint,
+  airbnb_neighborhood,
+  hotels_neighborhood,
+  neighborhoods
 }
