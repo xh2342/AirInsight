@@ -223,8 +223,9 @@ export default function HotelsPage() {
       </Grid>
 
       <h2 id='map-result'>
-        After evaluating all the hotel and Airbnb data in {neighborhood}, the average per-capita price suggests <br/>
-        {betterRating} has better rating and {betterPrice} has better price in the area.
+        After evaluating all the hotel and Airbnb data in {neighborhood}, the average per-capita price suggests 
+        <div style={{color : "cyan", display: "inline"}}> {betterRating}</div> has better rating and 
+        <div style={{color : "cyan", display: "inline"}}> {betterPrice} </div> has better price in the area.
       </h2>
     </Container>
   );
