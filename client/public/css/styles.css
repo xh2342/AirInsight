@@ -13,6 +13,11 @@ html,body {
     min-height: 94vh;
 }
 
+#block {
+    display: none;
+    height: 100%;
+}
+
 #page-container {
     position: relative; 
     min-height: 100vh;
@@ -22,12 +27,19 @@ html,body {
     background-size: cover;
 }
 
-.background-img-filter{
+#background-img-filter{
     -webkit-backdrop-filter: brightness(50%);
     backdrop-filter: brightness(50%);
+    padding: 0;
+    margin: 0;
 }
 #content-wrap{
-    padding-bottom: 50px;    /* Footer height */
+    padding-top: 0;
+    padding-bottom: 10vh;    /* Footer height */
+}
+
+#too-small{
+    display: none;
 }
 
 /*
@@ -278,13 +290,69 @@ footer {
     font-family: 'Nunito';
     text-align: justify;
     padding-top: 3px;
+    padding-bottom: 0;
     text-indent: 3%;
     position: absolute;
     left: 0;
     bottom: 0;
     width: 100%;
-    height: 50px;
+    height: 10vh;
     background-color: #569DAA;
     color: white;
 }
 
+@media only screen and (max-width: 900px) {
+    #root{
+        display: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    #background-img-filter{
+        -webkit-backdrop-filter: brightness(100%);
+        backdrop-filter: brightness(100%);
+    }
+
+    #block {
+        display: block;
+        padding: 40%;
+    }
+
+    #too-small{
+        margin: 0;
+        padding: 10%;
+        font-family: Nunito;
+        background-color: red;
+        color: white;
+        display: block;
+        text-align: center;
+    }
+
+    footer {
+        height: 40%;
+    }
+}
+
+@media only screen and (max-width: 850px) {
+    footer {
+        height: 35%;
+    }
+}
+
+@media only screen and (max-width: 800px) {
+    footer {
+        height: 25%;
+    }
+}
+
+@media only screen and (max-width: 750px) {
+    footer {
+        height: 20%;
+    }
+}
+
+@media only screen and (max-width: 670px) {
+    footer {
+        height: 15%;
+    }
+}
