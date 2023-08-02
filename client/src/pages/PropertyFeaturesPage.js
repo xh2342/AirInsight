@@ -93,10 +93,10 @@ export default function PropertyFeaturesPage() {
     return (
       <Container>
         <Grid container spacing={2}>
-          <Grid item xs={9}>
-          <h1>Property Features</h1>
+          <Grid item xs={6.15}>
+          <h1 style = {{textAlign: 'left'}}>Property Features</h1>
           </Grid>
-          <Grid item xs={3}>
+          <Grid item xs={5.85}>
           <Container class = 'btn-container'>
             <Button variant="contained" class='btn' onClick={() => btnHandler()}>
               <b>SEARCH</b>
@@ -157,7 +157,7 @@ export default function PropertyFeaturesPage() {
         <h2>Search Results</h2>
           <p className='regular' style={{textAlign: 'center'}}>
           We found {count} results based on your inquiry.<br/>
-          The number of listings account for {percentage}% of the Airbnb listings in Los Angeles.<br/>
+          The number of listings account for {twoDecimals(percentage)}% of the Airbnb listings in Los Angeles.<br/>
           The following chart illustrates the number of Airbnb listings which satisfy your requirement 
           in different price ranges.
           </p>

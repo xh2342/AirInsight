@@ -183,6 +183,7 @@ export default function HotelsPage() {
       alert("Neighborhood '"+text+"' doesn't exist!")
     }else{
       document.getElementById('map-result').style.visibility = 'visible';
+      document.getElementById('map-legend').style.visibility = 'visible';
       search();
     }
   }
@@ -195,12 +196,9 @@ export default function HotelsPage() {
   return (
     <Container>
       
-      <h2 style={{marginBottom: 0}}>
+      <h2 style={{marginBottom: 5}}>
         Airbnb vs Hotel Map
       </h2>
-      <p class='regular' style={{textAlign: 'center',marginTop : 0}}>
-        Blue: Airbnb, Red: Hotel
-      </p>
        
       {/* Add the div element for the map */}
       <div id="map"></div>
@@ -208,25 +206,37 @@ export default function HotelsPage() {
       <Grid container spacing={6} className='map-box-container'>
         
         <Grid item xs={8}>
+
+
+          
         <p className='regular'>Recommendation by Neighborhood</p>
           <TextField className='txt' id='txt' value={neighborhood ?? ''}
           onChange={(e) => onTextChangeListener(e)} />
         </Grid>
 
         <Grid item xs={4}>
-          <Container className = 'btn-container' style={{paddingTop : 60}}>
-            <Button variant="contained" class='btn' onClick={() => btnListener()}>
-              <b>SEARCH</b> 
-            </Button>
-          </Container>
+
+        <p class='regular' id='map-legend' style={{textAlign: 'center',marginTop : 0, 
+        visibility : 'hidden'}}>
+          Blue: Airbnb, Red: Hotel
+        </p>
+
+        <Container className = 'btn-container' style={{height : '35%'}}>
+          <Button variant="contained" class='btn' onClick={() => btnListener()}>
+            <b>SEARCH</b> 
+          </Button>
+        </Container>
+
+
+
         </Grid>
       </Grid>
 
-      <h2 id='map-result'>
+      <h3 id='map-result'>
         After evaluating all the hotel and Airbnb data in {neighborhood}, the average per-capita price suggests 
         <div style={{color : "cyan", display: "inline"}}> {betterRating}</div> has better rating and 
         <div style={{color : "cyan", display: "inline"}}> {betterPrice} </div> has better price in the area.
-      </h2>
+      </h3>
     </Container>
   );
 }

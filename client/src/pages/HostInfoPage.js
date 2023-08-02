@@ -100,10 +100,10 @@ export default function HostInfoPage() {
     return (
       <Container>
         <Grid container spacing={2}>
-          <Grid item xs={9}>
-          <h1>Host Information</h1>
+          <Grid item xs={7.38}>
+          <h1 style = {{textAlign: 'left'}}>Host Information</h1>
           </Grid>
-          <Grid item xs={3}>
+          <Grid item xs={4.62}>
           <Container class = 'btn-container'>
             <Button variant="contained" class='btn' onClick={() => btnHandler()}>
               <b>SEARCH</b>
@@ -171,7 +171,7 @@ export default function HostInfoPage() {
         <h2>Search Results</h2>
           <p className='regular' style={{textAlign: 'center'}}>
           We found {count} results based on your inquiry.<br/>
-          The number of listings account for {percentage}% of the Airbnb listings in Los Angeles.<br/>
+          The number of listings account for {twoDecimals(percentage)}% of the Airbnb listings in Los Angeles.<br/>
           The following chart illustrates the number of Airbnb listings which satisfy your requirement 
           in different price ranges.
           </p>
