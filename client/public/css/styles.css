@@ -1,0 +1,365 @@
+/*
+Initialize
+*/
+html,body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+#root {
+    min-height: 94vh;
+}
+
+#block {
+    display: none;
+    height: 100%;
+}
+
+#page-container {
+    position: relative; 
+    min-height: 100vh;
+    background-image: none;
+    background-position-y: 50%;
+    background-repeat: no-repeat;
+    background-size: cover;
+}
+
+#background-img-filter{
+    -webkit-backdrop-filter: brightness(50%);
+    backdrop-filter: brightness(50%);
+    padding: 0;
+    margin: 0;
+}
+#content-wrap{
+    padding-top: 0;
+    padding-bottom: 10vh;    /* Footer height */
+}
+
+#too-small{
+    display: none;
+}
+
+/*
+text
+*/
+
+h1, h2, h3, h4, h5, h6, .regular{
+    color: white;
+    text-align: left;
+    font-family: Nunito;
+}
+
+h1, h2, h3{
+    -webkit-user-select: none;
+    user-select: none;
+    text-align: center; 
+}
+
+/*
+dropdown select menu
+*/
+.dropdown-content {
+    width: 100%;
+    color: white;
+}
+
+.menu-item{
+    padding-top: 10px;
+    margin: 0;
+    background-color: #87CBB9;
+    border-radius: 10px 10px 0 0;
+    padding-bottom: 0;
+}
+
+.menu-list{
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    background-color: rgba(255,255,255, 0.7);
+}
+
+.menu-each{  
+    width: 100%;
+    height: 100%;
+    color: #577D86;
+    font-family: Nunito;
+}
+
+/*
+search button
+*/
+.btn-container {
+    height: 35%;
+    position: relative;
+}
+
+.btn {
+    position: relative;
+    left: 0;
+    top: 50%;
+    padding: 10px 30px;
+    text-align: center;
+    font-size: large;
+    color: white;
+    border-color: white;
+    border-style: solid;
+    background-color: #569DAA;
+    font-family: Nunito;
+    border-radius: 10px;    
+}
+
+.btn b, .btn p {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.btn:hover{
+    background-color: #577D86;
+    cursor: pointer;
+}
+
+.btn:active{
+    background-color: rgba(255,255,255, 0.7);
+}
+
+/*
+search result and bar chart
+*/
+.vl {
+    border-left: 1px solid white;
+    height: 100%;
+    padding: 0;
+}
+
+.result-grid{
+    padding-top: 50px;
+    padding-bottom: 50px;
+    padding-left: 30px;
+    padding-right: 30px;
+}
+
+.result-container{
+    position: relative;
+    background-color: rgba(255,255,255, 0.3);
+    border-radius: 10px;
+    margin-top: 40px;
+    margin-bottom: 40px;
+    visibility: hidden;
+}
+
+.chart{
+    margin-top: 10px;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.lis{
+    visibility: hidden;
+}
+
+.bar :hover{
+    fill: #577D86;
+}
+
+.bar:hover .lis{
+    visibility: visible;
+}
+/*
+map
+*/
+#map {
+    left: 7%;
+    height: 410px;
+    width: 1000px;
+    max-height: 450px;
+    max-width: 1000px;
+    border-radius: 10px;
+}
+
+.map-box-container {
+    padding-left: 13%;
+    padding-top: 5px;
+}
+
+#map-result{
+    padding: 0;
+    visibility: hidden;
+}
+
+#rec, #map-legend{
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/*
+text field
+*/
+
+.txt{
+    margin: 0;
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    background-color: rgba(255,255,255, 0.7);
+}
+
+/*
+nav bar
+*/
+#navbar{
+    background-color: #569DAA;
+}
+
+.nav-link {
+    color: white;
+    user-select: none;
+    text-decoration: none;
+    padding: 0;
+}
+
+.nav-link:hover{
+    background-color:#577D86;
+    border-radius: 10px 10px 10px 10px;
+    text-decoration: none;
+    user-select: none;
+    padding: 10px;
+    color:white;
+}
+
+/*
+Home page paragraph
+*/
+
+#homepage{
+    padding-top: 21%;
+    padding-left: 10%;
+    padding-right: 10%;
+    padding-bottom: 15%;
+    display: block;
+    text-align: justify;
+    font-family: Georgia;
+    color: white;
+}
+
+/* Custom styles for the "Rows per page" text in the MUI DataGrid */
+.css-rtrcn9-MuiTablePagination-root:last-child{
+   color: white;
+   font-family: Nunito; 
+} 
+
+/*
+table
+*/
+#tlp-table{
+    padding: 0 3% 0 3%;
+    visibility: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/*
+listing card
+*/
+#listing-card{
+    zoom: 80%;
+    padding-top: 0;
+    background-color: #569DAA;
+    border-radius: 16px;
+    border: 2px solid #000; 
+    width: 600px;
+}
+
+hr {
+    padding: 0;
+    background: white;
+    height: 3px;
+}
+
+#card-text-head{
+    color: white;
+    text-align: left;
+    font-family: Nunito;
+    font-weight: bold;
+    font-size: 2rem;
+    padding: 0;
+}
+
+.card-text{
+    color: white;
+    text-align: left;
+    font-family: Nunito;
+    font-weight: bold;
+}
+
+#chart{
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/*
+footer
+*/
+footer {
+    -webkit-user-select: none;
+    user-select: none;
+    font-family: 'Nunito';
+    text-align: justify;
+    padding-top: 3px;
+    padding-bottom: 0;
+    text-indent: 3%;
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 10vh;
+    background-color: #569DAA;
+    color: white;
+}
+
+@media only screen and (max-width: 900px) {
+
+    #root{
+        display: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    #background-img-filter{
+        -webkit-backdrop-filter: brightness(100%);
+        backdrop-filter: brightness(100%);
+    }
+
+    #block {
+        display: block;
+        padding: 40%;
+    }
+
+    #too-small{
+        margin: 0;
+        padding: 10%;
+        font-family: Nunito;
+        background-color: red;
+        color: white;
+        display: block;
+        text-align: center;
+    }
+
+    footer {
+        height: 55%;
+    }
+}
+
+@media only screen and (max-width: 780px) {
+    footer {
+        height: 45%;
+    }
+}
+
+@media only screen and (max-width: 650px) {
+    footer {
+        height: 30%;
+    }
+}
